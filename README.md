@@ -4,10 +4,15 @@ This command
 - reads a table in CSV, row by row,
 - runs an NER process over each row (concatenation of all the column values), and
 - appends to the row an additional column to contain the result of NER
-As for the NER process, it calls an REST API, e.g., that of PubDictionaries (https://pubdictionaries.org).
-It also assumes the API will return the result of NER in the format of PubAnnotation (http://www.pubannotation.org/docs/annotation-format/), and translates it into a list of comma-separated values. The result of annotation also specifies the source of the named entities, i.e., the column where the names entities have been recognized.
 
-It is an output from the BioHackathon MENA 2023.
+As for the NER process, it calls an REST API, e.g., that of [PubDictionaries](https://pubdictionaries.org).
+It also assumes the API will return the result of NER in the [format of PubAnnotation](http://www.pubannotation.org/docs/annotation-format/), and translates it into a list of comma-separated values. The result of annotation also specifies the source of the named entities, i.e., the column where the names entities have been recognized.
+
+This scrip was initially written during [BioHackathon MENA 2023](https://cbrcconferences.kaust.edu.sa/bio-hackathon-2023), for the potential users of [PubDictionaries](https://pubdictionaries.org), who wanted to annotate CSV files instaed of text files.
+
+## Illustration
+
+![Illustration of the output of table_ner](https://raw.githubusercontent.com/jdkim/table_ner/main/illustration-of-table-ner.png)
 
 ## Installation
 
