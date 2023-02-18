@@ -10,10 +10,10 @@ class Annotator
 		r = RestClient.get @annotator, {params: {text:text}}
 		a = JSON.parse(r)
 
-		if a['denotations'].empty?
-			{}
+		if a['denotations'].nil?
+			[]
 		else
-			a
+			a['denotations']
 		end
 	end
 end
@@ -42,19 +42,30 @@ if __FILE__ == $0
 	require 'json'
 
 	annotator_url = 'https://pubdictionaries.org/text_annotation.json?dictionary=EBI_biome_list&longest=true'
+	col_sep = ","
 	delimiter = ', '
+	verbose_p = false
 
 	## command line option processing
 	require 'optparse'
 	optparse = OptionParser.new do|opts|
-		opts.banner = "Usage: table_annotator.rb [options] input_tsv output_tsv"
+		opts.banner = "Usage: table_annotator.rb [options] input_csv output_csv"
 
 		opts.on('-a', '--annotator_URL', "specifies the URL of the annotator to use. (default: #{annotator_url})") do |a|
 			annotator = a
 		end
 
-		opts.on('-d', '--delimiter', "specifies the delimiter. (default: '#{delimiter}')") do |d|
+		opts.on('-s', '--col_sep', "specifies the column separator of the input CSV file. (default: '#{col_sep}') Note that for the output CSV file, always the TAB character will be used for the column separator.") do |s|
+			col_sep = s
+		end
+
+		opts.on('-d', '--delimiter', "specifies the delimiter of multiple values. (default: '#{delimiter}')") do |d|
 			delimiter = d
+		end
+
+		opts.on('-v', '--verbose', 'tells it to output verbosely (for a debugging purpose)') do
+			puts opts
+			exit
 		end
 
 		opts.on('-h', '--help', 'displays this screen') do
@@ -72,10 +83,11 @@ if __FILE__ == $0
 
 	filename_tsv_in  = ARGV[0]
 	filename_tsv_out = ARGV[1]
-	puts "Annotator URL   : #{annotator_url}"
-	puts "Input TSV file  : #{filename_tsv_in}"
-	puts "Output TSV file : #{filename_tsv_out}"
-	puts "Delimiter       : '#{delimiter}'"
+	puts "Annotator URL    : #{annotator_url}"
+	puts "Input CSV file   : #{filename_tsv_in}"
+	puts "Output CSV file  : #{filename_tsv_out}"
+	puts "Column separator : '#{col_sep}'"
+	puts "Delimiter        : '#{delimiter}'"
 	puts
 
 	headers = []
@@ -83,16 +95,14 @@ if __FILE__ == $0
 	col_host = nil
 
 	annotator = Annotator.new(annotator_url)
-	# CSV.foreach(filename_tsv_in, col_sep: "\t") do |row|
-	CSV.foreach(filename_tsv_in) do |row|
+	CSV.foreach(filename_tsv_in, col_sep: col_sep) do |row|
 		if headers.empty?
 			headers = row
 			num_col = headers.count
 			col_host = headers.index('host')
 			puts "The number of columns: #{num_col}"
 			puts "The 'host' column: #{col_host}"
-			next
-		end
+		else
 
 		summary = []
 
@@ -121,8 +131,11 @@ if __FILE__ == $0
 			else
 				whole_result["denotations"].collect do |d|
 					header = headers[find_index(d)]
-					"#{d['obj']} [#{header}]"
-					# "#{d} [#{header}]"
+					if verbose_p
+						"#{d} [#{header}]"
+					else
+						"#{d['obj']} [#{header}]"
+					end
 				end
 			end
 
@@ -131,8 +144,11 @@ if __FILE__ == $0
 			[]
 		end
 
-		puts row.push(annotation.join(delimiter)).join("\t")
-		# puts annotation.join("\n")
-		# puts "---"
+
+
+		end
+
+
+		puts row.push(annotation.join(delimiter)).to_csv
 	end
 end

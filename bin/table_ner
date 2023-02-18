@@ -1,0 +1,84 @@
+#!/usr/bin/env ruby
+require 'table_ner'
+require 'config'
+require 'csv'
+require 'json'
+
+## options
+config_file = 'config/default.yaml'
+opt_annotator = nil
+opt_col_sep = nil
+opt_delimiter = nil
+opt_verbose = false
+
+## command line option processing
+require 'optparse'
+optparse = OptionParser.new do|opts|
+	opts.banner = "Usage: table_ner.rb [options]"
+
+	opts.on('-c', '--configuration path_to_file', "specifies the path to the configuration file you want to read from. (default: #{config_file})") do |c|
+		config_file = c
+	end
+
+	opts.on('-a', '--annotator URL', "specifies the URL of the annotator to use.") do |a|
+		opt_annotator = a
+	end
+
+	opts.on('-s', '--col_sep column_separator', "specifies the column separator of the input CSV file. Note that for the output CSV file, always the TAB character will be used for the column separator.") do |s|
+		opt_col_sep = s
+	end
+
+	opts.on('-d', '--delimiter delimiter', "specifies the delimiter of multiple values.") do |d|
+		opt_delimiter = d
+	end
+
+	opts.on('-v', '--verbose', 'tells it to output verbosely (for a debugging purpose)') do
+		opt_verbose = true
+	end
+
+	opts.on('-h', '--help', 'displays this screen') do
+		puts opts
+		exit
+	end
+end
+
+optparse.parse!
+
+Config.load_and_set_settings(config_file)
+
+Settings.annotator_url = opt_annotator if opt_annotator
+Settings.col_sep = opt_col_sep if opt_col_sep
+Settings.delimiter = opt_delimiter if opt_delimiter
+Settings.verbose = opt_verbose
+
+if Settings.annotator_url.nil? || Settings.annotator_url.empty?
+	puts optparse.help
+	exit 1
+end
+
+puts "Annotator URL    : #{Settings.annotator_url}"
+puts "Column separator : '#{Settings.col_sep}'"
+puts "Delimiter        : '#{Settings.delimiter}'"
+puts
+
+annotator = Annotator.new(Settings.annotator_url)
+column_index = nil
+csv = CSV.new(ARGF, col_sep: Settings.col_sep, headers: :first_row)
+csv.each do |line|
+	if column_index.nil?
+		column_index = ColumnIndex.new(csv.headers)
+		puts csv.headers.to_csv
+	end
+
+	row = line.fields
+	column_index.update(row)
+
+	row_text   = row.join(' ')
+	row_results = annotator.annotate(row_text)
+	col_results = row_results.collect do |d|
+		header_source = column_index.find(d)
+		Settings.verbose ? "#{d} [#{header_source}]" : "#{d['obj']} [#{header_source}]"
+	end
+
+	puts row.push(col_results.join(Settings.delimiter)).to_csv
+end

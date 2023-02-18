@@ -1,0 +1,3 @@
+annotator_url: https://pubdictionaries.org/text_annotation.json?dictionary=EBI_biome_list&longest=true
+col_sep: "\t"
+delimiter: ", "
