@@ -14,7 +14,7 @@ opt_verbose = false
 ## command line option processing
 require 'optparse'
 optparse = OptionParser.new do|opts|
-	opts.banner = "Usage: table_ner.rb [options]"
+	opts.banner = "Usage: table_ner.rb [options] < input_table.csv > output_table.csv"
 
 	opts.on('-c', '--configuration path_to_file', "specifies the path to the configuration file you want to read from. (default: #{config_file})") do |c|
 		config_file = c
